@@ -3,7 +3,7 @@ package io.github.cponfick
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ComposeAppDesktopTest {
+class ComposeAppCommonTest {
 
     @Test
     fun example() {
