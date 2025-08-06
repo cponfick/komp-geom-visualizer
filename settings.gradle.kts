@@ -1,4 +1,4 @@
-rootProject.name = "kotlin-geometry-visualizer"
+rootProject.name = "komp-geom-visualizer"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

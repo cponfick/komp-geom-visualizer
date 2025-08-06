@@ -6,7 +6,7 @@ import androidx.compose.ui.window.application
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "kotlin-geometry-visualizer",
+        title = "komp-geom-visualizer",
     ) {
         App()
     }
