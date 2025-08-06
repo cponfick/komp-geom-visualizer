@@ -12,37 +12,37 @@ import io.github.cponfick.state.CanvasState
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun Modifier.canvasPointerHandling(
-    canvasState: CanvasState,
-    scrollFactor: Double
+  canvasState: CanvasState,
+  scrollFactor: Double
 ): Modifier = this
-    .onPointerEvent(PointerEventType.Press) {
-        canvasState.onPointerPress()
+  .onPointerEvent(PointerEventType.Press) {
+    canvasState.onPointerPress()
+  }
+  .onPointerEvent(PointerEventType.Move) {
+    val event = it.changes.firstOrNull()
+    when {
+      event == null -> return@onPointerEvent
+      event.pressed && it.buttons.isPressed(0) -> {
+        val delta = Offset(
+          event.position.x - event.previousPosition.x,
+          event.position.y - event.previousPosition.y
+        )
+        canvasState.onPointerMove(delta)
+      }
     }
-    .onPointerEvent(PointerEventType.Move) {
-        val event = it.changes.firstOrNull()
-        when {
-            event == null -> return@onPointerEvent
-            event.pressed && it.buttons.isPressed(0) -> {
-                val delta = Offset(
-                    event.position.x - event.previousPosition.x,
-                    event.position.y - event.previousPosition.y
-                )
-                canvasState.onPointerMove(delta)
-            }
-        }
+  }
+  .onPointerEvent(PointerEventType.Release) {
+    val event = it.changes.first()
+    val position = event.position
+    val isPrimary = it.button?.isPrimary == true
+    canvasState.onPointerRelease(position, isPrimary)
+  }
+  .onPointerEvent(PointerEventType.Scroll) {
+    val event = it.changes.firstOrNull()
+    if (event != null) {
+      canvasState.onScroll(event.scrollDelta.y, scrollFactor)
     }
-    .onPointerEvent(PointerEventType.Release) {
-        val event = it.changes.first()
-        val position = event.position
-        val isPrimary = it.button?.isPrimary == true
-        canvasState.onPointerRelease(position, isPrimary)
-    }
-    .onPointerEvent(PointerEventType.Scroll) {
-        val event = it.changes.firstOrNull()
-        if (event != null) {
-            canvasState.onScroll(event.scrollDelta.y, scrollFactor)
-        }
-    }
-    .onSizeChanged { size ->
-        canvasState.onSizeChanged(size.width.toDouble(), size.height.toDouble())
-    }
+  }
+  .onSizeChanged { size ->
+    canvasState.onSizeChanged(size.width.toDouble(), size.height.toDouble())
+  }
