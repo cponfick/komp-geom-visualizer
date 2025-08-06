@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import io.github.cponfick.components.utils.formatDouble
 import io.github.cponfick.kompgeom.euclidean.twod.AffineTransformationMatrix2
 import io.github.cponfick.kompgeom.euclidean.twod.Vec2
 import kotlin.math.abs
@@ -131,5 +132,3 @@ fun BaseCanvas(
     }
   }
 }
-
-expect fun formatDouble(value: Double, decimalPlaces: Int = 2): String
