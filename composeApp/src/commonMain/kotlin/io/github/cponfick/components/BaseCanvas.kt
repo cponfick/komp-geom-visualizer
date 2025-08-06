@@ -13,6 +13,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import io.github.cponfick.components.utils.formatDouble
 import io.github.cponfick.kompgeom.euclidean.twod.AffineTransformationMatrix2
 import io.github.cponfick.kompgeom.euclidean.twod.Vec2
+import io.github.cponfick.state.AlgorithmResult
 import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -23,6 +24,8 @@ fun BaseCanvas(
   cordToScreen: AffineTransformationMatrix2,
   showLabels: Boolean = true,
   points: Map<Int, Vec2> = emptyMap(),
+  selectedPoints: Set<Int> = emptySet(),
+  algorithmResults: Map<String, AlgorithmResult> = emptyMap(),
   canvasModifier: Modifier
 ) {
   val textMeasurer = rememberTextMeasurer()
@@ -106,12 +109,82 @@ fun BaseCanvas(
         key to Offset(transformedVec2.x.toFloat(), transformedVec2.y.toFloat())
       }
 
+    // Draw regular points
+    val regularPoints = pointsToDraw.filter { (key, _) -> !selectedPoints.contains(key) }
     drawPoints(
-      points = pointsToDraw.map { it.second },
+      points = regularPoints.map { it.second },
       pointMode = PointMode.Points,
       color = Color.Black,
       strokeWidth = 3f
     )
+
+    // Draw selected points
+    val selectedPointsDrawn = pointsToDraw.filter { (key, _) -> selectedPoints.contains(key) }
+    drawPoints(
+      points = selectedPointsDrawn.map { it.second },
+      pointMode = PointMode.Points,
+      color = Color.Blue,
+      strokeWidth = 5f
+    )
+
+    // Draw algorithm results
+    algorithmResults.values.forEach { result ->
+      when (result) {
+        is AlgorithmResult.PointPair -> {
+          val point1Screen = cordToScreen.apply(result.point1)
+          val point2Screen = cordToScreen.apply(result.point2)
+          val offset1 = Offset(point1Screen.x.toFloat(), point1Screen.y.toFloat())
+          val offset2 = Offset(point2Screen.x.toFloat(), point2Screen.y.toFloat())
+
+          // Draw line between closest pair
+          drawLine(
+            color = result.color,
+            start = offset1,
+            end = offset2,
+            strokeWidth = 3f
+          )
+
+          // Draw distance label at midpoint
+          if (showLabels) {
+            val midpoint = Offset(
+              (offset1.x + offset2.x) / 2,
+              (offset1.y + offset2.y) / 2
+            )
+            val distanceText = "d = ${formatDouble(result.distance)}"
+            drawText(
+              textMeasurer = textMeasurer,
+              topLeft = midpoint,
+              text = distanceText,
+              softWrap = false,
+              maxLines = 1
+            )
+          }
+        }
+        is AlgorithmResult.Line -> {
+          val startScreen = cordToScreen.apply(result.start)
+          val endScreen = cordToScreen.apply(result.end)
+          drawLine(
+            color = result.color,
+            start = Offset(startScreen.x.toFloat(), startScreen.y.toFloat()),
+            end = Offset(endScreen.x.toFloat(), endScreen.y.toFloat()),
+            strokeWidth = 2f
+          )
+        }
+        is AlgorithmResult.Points -> {
+          val resultPoints = result.points
+            .filter { it.x > minX && it.x < maxX && it.y > minY && it.y < maxY }
+            .map { cordToScreen.apply(it) }
+            .map { Offset(it.x.toFloat(), it.y.toFloat()) }
+
+          drawPoints(
+            points = resultPoints,
+            pointMode = PointMode.Points,
+            color = result.color,
+            strokeWidth = 4f
+          )
+        }
+      }
+    }
 
     if (!showLabels) return@Canvas
 
