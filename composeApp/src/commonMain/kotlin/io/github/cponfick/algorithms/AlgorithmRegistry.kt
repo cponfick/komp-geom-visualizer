@@ -6,7 +6,8 @@ object AlgorithmRegistry {
   private val algorithms = mutableListOf<GeometryAlgorithm>()
   
   init {
-    registerAlgorithm(ClosestPairAlgorithm())
+    registerAlgorithm(ClosestPairNaive())
+    registerAlgorithm(ClosestPairDivideAndConquer())
   }
   
   fun registerAlgorithm(algorithm: GeometryAlgorithm) {
