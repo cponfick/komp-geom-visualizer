@@ -31,7 +31,6 @@ fun BaseCanvas(
   val textMeasurer = rememberTextMeasurer()
 
   Canvas(modifier = canvasModifier.fillMaxSize().graphicsLayer()) {
-    println("Drawing canvas at ${Clock.System.now()}")
     val canvasWidth = size.width
     val canvasHeight = size.height
 
