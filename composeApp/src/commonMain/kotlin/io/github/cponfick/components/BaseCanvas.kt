@@ -169,6 +169,18 @@ fun BaseCanvas(
             strokeWidth = 2f
           )
         }
+        is AlgorithmResult.Lines -> {
+          result.lines.forEach { line ->
+            val startScreen = cordToScreen.apply(line.start)
+            val endScreen = cordToScreen.apply(line.end)
+            drawLine(
+              color = line.color,
+              start = Offset(startScreen.x.toFloat(), startScreen.y.toFloat()),
+              end = Offset(endScreen.x.toFloat(), endScreen.y.toFloat()),
+              strokeWidth = 2f
+            )
+          }
+        }
         is AlgorithmResult.Points -> {
           val resultPoints = result.points
             .filter { it.x > minX && it.x < maxX && it.y > minY && it.y < maxY }

@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.cponfick.algorithms.AlgorithmRegistry
 import io.github.cponfick.state.CanvasState
-import io.github.cponfick.state.GeometryAlgorithm
+import io.github.cponfick.state.GeometricAlgorithm
 
 @Composable
 fun AlgorithmPanel(
@@ -160,7 +160,7 @@ fun AlgorithmPanel(
 
 @Composable
 private fun AlgorithmItem(
-  algorithm: GeometryAlgorithm,
+  algorithm: GeometricAlgorithm,
   canExecute: Boolean,
   onExecute: () -> Unit
 ) {

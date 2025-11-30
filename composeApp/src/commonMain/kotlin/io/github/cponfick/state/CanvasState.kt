@@ -124,7 +124,7 @@ class CanvasState {
     selectedPoints.addAll(points.keys)
   }
 
-  fun executeAlgorithm(algorithm: GeometryAlgorithm) {
+  fun executeAlgorithm(algorithm: GeometricAlgorithm) {
     val selectedPointsData = selectedPoints.map { points[it]!! }
     if (selectedPointsData.size >= algorithm.getMinimumPoints()) {
       val result = algorithm.execute(selectedPointsData)
@@ -161,10 +161,14 @@ sealed class AlgorithmResult {
     val points: List<Vec2>,
     val color: Color = Color.Green
   ) : AlgorithmResult()
+
+  data class Lines(
+    val lines: List<Line>,
+  ) : AlgorithmResult()
 }
 
 // Interface for geometry algorithms
-interface GeometryAlgorithm {
+interface GeometricAlgorithm {
   fun getName(): String
   fun getMinimumPoints(): Int
   fun execute(points: List<Vec2>): AlgorithmResult
