@@ -12,7 +12,7 @@ Visualization tool for the [Komp Geom](https://github.com/cponfick/komp-geom) Ko
 - **Clear Results** removes overlays. Editing the scene or selection also removes overlays because results describe the exact current input.
 - **Clear Scene** removes all points and selection. Point IDs remain monotonic during the session, so labels are never silently reused.
 
-Algorithms run only on selected points. To add an adapter, implement `GeometricAlgorithm`, return an `AlgorithmResult`, register it in `AlgorithmRegistry`, and add rendering if a new result type is introduced.
+Algorithms run on explicitly selected scene objects. Add points for point algorithms, or choose Draw segments and drag to create non-zero-length segments for Bentley–Ottmann. Select segments directly; the algorithm reports all intersecting segment pairs, including point contacts and collinear overlaps. To add an adapter, register an `AlgorithmDescriptor` in `AlgorithmRegistry` and provide its geometry-aware implementation.
 
 ## Build and test
 

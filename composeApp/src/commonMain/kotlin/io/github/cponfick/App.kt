@@ -31,7 +31,11 @@ fun App() {
         cordToScreen = canvasState.cordToScreen,
         points = canvasState.points,
         selectedPoints = canvasState.selectedPoints,
+        segments = canvasState.segments,
+        selectedSegments = canvasState.selectedSegments,
         hoveredPointId = canvasState.hoveredPointId,
+        hoveredSegmentId = canvasState.hoveredSegmentId,
+        segmentPreview = canvasState.segmentPreview,
         showLabels = canvasState.showLabels,
         algorithmResults = canvasState.algorithmResults,
         canvasModifier = Modifier
@@ -46,7 +50,7 @@ fun App() {
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         ) {
           Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Click to add points • drag to pan • wheel to zoom", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            Text("Add points or draw segments • drag to pan • wheel to zoom", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { canvasState.dismissHelp() }) { Text("Dismiss") }
           }
         }

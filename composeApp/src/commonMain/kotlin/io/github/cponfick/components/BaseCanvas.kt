@@ -26,7 +26,11 @@ fun BaseCanvas(
   showLabels: Boolean = true,
   points: Map<Int, Vec2> = emptyMap(),
   selectedPoints: Set<Int> = emptySet(),
+  segments: Map<Int, io.github.cponfick.state.SegmentEntity> = emptyMap(),
+  selectedSegments: Set<Int> = emptySet(),
   hoveredPointId: Int? = null,
+  hoveredSegmentId: Int? = null,
+  segmentPreview: Pair<Vec2, Vec2>? = null,
   algorithmResults: Map<String, AlgorithmResult> = emptyMap(),
   canvasModifier: Modifier
 ) {
@@ -35,6 +39,8 @@ fun BaseCanvas(
   val axisColor = MaterialTheme.colorScheme.onSurface
   val pointColor = MaterialTheme.colorScheme.onSurface
   val selectedColor = MaterialTheme.colorScheme.primary
+  val segmentHoverColor = MaterialTheme.colorScheme.tertiary
+  val segmentPreviewColor = MaterialTheme.colorScheme.primary.copy(alpha = .65f)
 
   Canvas(modifier = canvasModifier.fillMaxSize().graphicsLayer()) {
     val canvasWidth = size.width
@@ -116,6 +122,20 @@ fun BaseCanvas(
         val transformedVec2 = cordToScreen.apply(it)
         key to Offset(transformedVec2.x.toFloat(), transformedVec2.y.toFloat())
       }
+
+    // Scene segments are drawn below points and algorithm overlays.
+    segments.values.forEach { segment ->
+      val a = cordToScreen.apply(segment.start); val b = cordToScreen.apply(segment.end)
+      val selected = segment.id in selectedSegments
+      val hovered = segment.id == hoveredSegmentId
+      drawLine(if (selected) selectedColor else if (hovered) segmentHoverColor else pointColor,
+        Offset(a.x.toFloat(), a.y.toFloat()), Offset(b.x.toFloat(), b.y.toFloat()), strokeWidth = if (selected || hovered) 5f else 3f)
+      if (showLabels) drawText(textMeasurer, "S${segment.id}", Offset(((a.x+b.x)/2).toFloat()+4f,((a.y+b.y)/2).toFloat()+4f), softWrap=false, maxLines=1)
+    }
+    segmentPreview?.let { (start,end) ->
+      val a=cordToScreen.apply(start); val b=cordToScreen.apply(end)
+      drawLine(segmentPreviewColor, Offset(a.x.toFloat(),a.y.toFloat()), Offset(b.x.toFloat(),b.y.toFloat()), strokeWidth=3f)
+    }
 
     // Draw regular points
     val regularPoints = pointsToDraw.filter { (key, _) -> !selectedPoints.contains(key) }
@@ -210,6 +230,34 @@ fun BaseCanvas(
 
           resultPoints.forEach { position ->
             drawCircle(result.color, radius = 5f, center = position)
+          }
+        }
+        is AlgorithmResult.BentleyOttmannResult -> {
+          result.segments.forEach { segment ->
+            val start = cordToScreen.apply(segment.start)
+            val end = cordToScreen.apply(segment.end)
+            drawLine(result.segmentColor, Offset(start.x.toFloat(), start.y.toFloat()), Offset(end.x.toFloat(), end.y.toFloat()), strokeWidth = 3f)
+            if (showLabels) {
+              val label = cordToScreen.apply(Vec2((segment.start.x + segment.end.x) / 2.0, (segment.start.y + segment.end.y) / 2.0))
+              drawText(textMeasurer, "S${segment.id}", Offset(label.x.toFloat() + 4f, label.y.toFloat() + 4f), softWrap = false, maxLines = 1)
+            }
+          }
+          result.intersections.forEach { intersection ->
+            when (intersection.kind) {
+              AlgorithmResult.IntersectionKind.POINT -> intersection.point?.let {
+                val p = cordToScreen.apply(it)
+                drawCircle(result.pointColor, 7f, Offset(p.x.toFloat(), p.y.toFloat()))
+              }
+              AlgorithmResult.IntersectionKind.OVERLAP -> {
+                val start = intersection.overlapStart
+                val end = intersection.overlapEnd
+                if (start != null && end != null) {
+                  val a = cordToScreen.apply(start); val b = cordToScreen.apply(end)
+                  drawLine(result.overlapColor, Offset(a.x.toFloat(), a.y.toFloat()), Offset(b.x.toFloat(), b.y.toFloat()), strokeWidth = 7f)
+                  if (showLabels) drawText(textMeasurer, "overlap S${intersection.firstSegment}/S${intersection.secondSegment}", Offset(a.x.toFloat() + 5f, a.y.toFloat() + 5f), softWrap = false, maxLines = 1)
+                }
+              }
+            }
           }
         }
       }
