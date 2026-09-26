@@ -12,21 +12,16 @@ class QuickHull : GeometricAlgorithm {
   override fun execute(points: List<Vec2>): AlgorithmResult {
     require(points.size >= 3) { "At least 3 points are required for Quick Hull algorithm" }
 
-    val algorithm = io.github.cponfick.kompgeom.algorithms.convexhull.Quickhull2(points)
-    val result = algorithm.execute()
-
-    val centroid = Vec2(
-      x = result.points.map { it.x }.average(),
-      y = result.points.map { it.y }.average()
-    )
-    val sorted = result.points.sortedBy { point ->
-      kotlin.math.atan2(point.y - centroid.y, point.x - centroid.x)
-    }
-
-    return AlgorithmResult.Lines(
-      lines = sorted.zip(sorted.drop(1) + sorted.first()).map { (start, end) ->
-        AlgorithmResult.Line(start = start, end = end)
-      }
-    )
+    val distinct = points.distinctBy { it.x to it.y }
+    if (distinct.size < 3) return AlgorithmResult.Lines(emptyList())
+    val algorithm = io.github.cponfick.kompgeom.algorithms.convexhull.Quickhull2(distinct)
+    val hull = algorithm.execute().points.distinctBy { it.x to it.y }
+    if (hull.size < 2) return AlgorithmResult.Lines(emptyList())
+    if (hull.size == 2) return AlgorithmResult.Lines(listOf(AlgorithmResult.Line(hull[0], hull[1])))
+    val centroid = Vec2(hull.map { it.x }.average(), hull.map { it.y }.average())
+    val sorted = hull.sortedBy { kotlin.math.atan2(it.y - centroid.y, it.x - centroid.x) }
+    return AlgorithmResult.Lines(sorted.zip(sorted.drop(1) + sorted.first()).map { (start, end) ->
+      AlgorithmResult.Line(start, end)
+    })
   }
 }

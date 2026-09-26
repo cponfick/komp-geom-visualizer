@@ -12,6 +12,9 @@ object AlgorithmRegistry {
   }
 
   fun registerAlgorithm(algorithm: GeometricAlgorithm) {
+    require(algorithms.none { it.getName() == algorithm.getName() }) {
+      "An algorithm named '${algorithm.getName()}' is already registered"
+    }
     algorithms.add(algorithm)
   }
 

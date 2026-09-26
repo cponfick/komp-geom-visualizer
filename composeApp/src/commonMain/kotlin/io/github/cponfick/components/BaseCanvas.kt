@@ -44,7 +44,10 @@ fun BaseCanvas(
     val origin = Offset(x = originVec2.x.toFloat(), y = originVec2.y.toFloat())
 
     // Draw grid lines based on initial origin
-    val gridSpacing = abs(cordToScreen.apply(Vec2(1.0, 0.0)).x - originVec2.x)
+    val rawGridSpacing = abs(cordToScreen.apply(Vec2(1.0, 0.0)).x - originVec2.x)
+    if (!rawGridSpacing.isFinite() || rawGridSpacing <= 0.0) return@Canvas
+    var gridSpacing = rawGridSpacing
+    while (canvasWidth / gridSpacing > 100.0) gridSpacing *= 2.0
     val originOffsetX = originVec2.x % gridSpacing
     val originOffsetY = originVec2.y % gridSpacing
 
@@ -102,7 +105,7 @@ fun BaseCanvas(
     val maxX = bottomRight.x
     val maxY = topLeft.y
 
-    val pointsToDraw = points.filter { (_, it) -> it.x > minX && it.x < maxX && it.y > minY && it.y < maxY }
+    val pointsToDraw = points.filter { (_, it) -> it.x >= minX && it.x <= maxX && it.y >= minY && it.y <= maxY }
       .map { (key, it) ->
         val transformedVec2 = cordToScreen.apply(it)
         key to Offset(transformedVec2.x.toFloat(), transformedVec2.y.toFloat())
@@ -181,9 +184,15 @@ fun BaseCanvas(
             )
           }
         }
+        is AlgorithmResult.Error -> {
+          if (showLabels) {
+            drawText(textMeasurer = textMeasurer, topLeft = Offset(8f, canvasHeight - 28f),
+              text = result.message, softWrap = false, maxLines = 1)
+          }
+        }
         is AlgorithmResult.Points -> {
           val resultPoints = result.points
-            .filter { it.x > minX && it.x < maxX && it.y > minY && it.y < maxY }
+            .filter { it.x >= minX && it.x <= maxX && it.y >= minY && it.y <= maxY }
             .map { cordToScreen.apply(it) }
             .map { Offset(it.x.toFloat(), it.y.toFloat()) }
 

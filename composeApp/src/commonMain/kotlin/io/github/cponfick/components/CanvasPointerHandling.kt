@@ -16,7 +16,7 @@ fun Modifier.canvasPointerHandling(
   scrollFactor: Double
 ): Modifier = this
   .onPointerEvent(PointerEventType.Press) {
-    canvasState.onPointerPress()
+    canvasState.onPointerPress(it.changes.firstOrNull()?.position ?: Offset.Zero)
   }
   .onPointerEvent(PointerEventType.Move) {
     val event = it.changes.firstOrNull()
@@ -32,15 +32,13 @@ fun Modifier.canvasPointerHandling(
     }
   }
   .onPointerEvent(PointerEventType.Release) {
-    val event = it.changes.first()
-    val position = event.position
-    val isPrimary = it.button?.isPrimary == true
-    canvasState.onPointerRelease(position, isPrimary)
+    val event = it.changes.firstOrNull() ?: return@onPointerEvent
+    canvasState.onPointerRelease(event.position, it.button?.isPrimary == true)
   }
   .onPointerEvent(PointerEventType.Scroll) {
     val event = it.changes.firstOrNull()
     if (event != null) {
-      canvasState.onScroll(event.scrollDelta.y, scrollFactor)
+      canvasState.onScroll(event.scrollDelta.y, scrollFactor, event.position)
     }
   }
   .onSizeChanged { size ->

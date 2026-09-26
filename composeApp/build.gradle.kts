@@ -44,6 +44,9 @@ kotlin {
       implementation(libs.androidx.lifecycle.runtimeCompose)
       implementation(libs.kompGeom)
     }
+    commonTest.dependencies {
+      implementation(kotlin("test"))
+    }
     jvmMain.dependencies {
       implementation(compose.desktop.currentOs)
       implementation(libs.kotlinx.coroutinesSwing)

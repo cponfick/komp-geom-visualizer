@@ -3,9 +3,9 @@ androidx-lifecycle = "2.9.1"
 composeHotReload = "1.0.0-beta04"
 composeMultiplatform = "1.8.2"
 junit = "4.13.2"
-kotlin = "2.2.0"
+kotlin = "2.4.0"
 kotlinx-coroutines = "1.10.2"
-kompGeom = "0.3.0"
+kompGeom = "0.4.0-rc7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
