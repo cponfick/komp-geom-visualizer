@@ -21,6 +21,16 @@ class CanvasState {
   var showLabels by mutableStateOf(true)
   var hasMoved by mutableStateOf(false)
     private set
+  val zoomPercent: Int
+    get() {
+      val origin = tempCordToScreen.apply(Vec2(0.0, 0.0))
+      val unit = tempCordToScreen.apply(Vec2(1.0, 0.0))
+      return ((unit.distance(origin) / 45.0) * 100.0).toInt().coerceAtLeast(1)
+    }
+  var hoveredPointId by mutableStateOf<Int?>(null)
+    private set
+  var isHelpDismissed by mutableStateOf(false)
+    private set
 
   val points = mutableStateMapOf<Int, Vec2>()
   val selectedPoints = mutableStateSetOf<Int>()
@@ -28,9 +38,20 @@ class CanvasState {
   var isSelectionMode by mutableStateOf(false)
     private set
 
+  private data class SceneSnapshot(val points: Map<Int, Vec2>, val selected: Set<Int>)
+  private val undoStack = ArrayDeque<SceneSnapshot>()
+  private val redoStack = ArrayDeque<SceneSnapshot>()
   private var nextPointId = 0
+
+  private fun snapshot() = SceneSnapshot(points.toMap(), selectedPoints.toSet())
+  private fun rememberUndo() {
+    undoStack.addLast(snapshot())
+    if (undoStack.size > 50) undoStack.removeFirst()
+    redoStack.clear()
+  }
   private var hasLaidOut = false
   private var lastPointerPosition = Offset.Zero
+  private var initialTransform = AffineTransformationMatrix2.IDENTITY
   private val minPixelsPerWorldUnit = 0.1
   private val maxPixelsPerWorldUnit = 10_000.0
   private val pointHitRadiusPixels = 12.0
@@ -46,6 +67,7 @@ class CanvasState {
     if (!hasLaidOut) {
       setTransform(AffineTransformationMatrix2.createScaling(45.0, -45.0)
         .translate(width / 2.0, height / 2.0))
+      initialTransform = tempCordToScreen
       hasLaidOut = true
     } else {
       // Resize anchor: preserve the world point at the old viewport center.
@@ -67,29 +89,37 @@ class CanvasState {
     setTransform(tempCordToScreen.translate(delta.x.toDouble(), delta.y.toDouble()))
   }
 
+  fun updateHover(position: Offset) {
+    hoveredPointId = hitPoint(position)
+  }
+
+  private fun hitPoint(position: Offset): Int? = points.entries
+    .map { (id, point) -> id to cordToScreen.apply(point) }
+    .filter { (_, point) ->
+      val dx = point.x - position.x
+      val dy = point.y - position.y
+      dx * dx + dy * dy <= pointHitRadiusPixels * pointHitRadiusPixels
+    }
+    .minByOrNull { (_, point) ->
+      val dx = point.x - position.x
+      val dy = point.y - position.y
+      dx * dx + dy * dy
+    }?.first
+
   fun onPointerRelease(position: Offset, isPrimary: Boolean) {
     lastPointerPosition = position
     if (position.x < 0 || position.x > currentWidth || position.y < 0 || position.y > currentHeight) return
     if (!isPrimary || hasMoved) return
 
     if (isSelectionMode) {
-      val closestPointId = points.entries
-        .map { (id, point) -> id to cordToScreen.apply(point) }
-        .filter { (_, point) ->
-          val dx = point.x - position.x
-          val dy = point.y - position.y
-          dx * dx + dy * dy <= pointHitRadiusPixels * pointHitRadiusPixels
-        }
-        .minByOrNull { (_, point) ->
-          val dx = point.x - position.x
-          val dy = point.y - position.y
-          dx * dx + dy * dy
-        }?.first
+      val closestPointId = hitPoint(position)
       if (closestPointId != null) {
+        rememberUndo()
         if (!selectedPoints.add(closestPointId)) selectedPoints.remove(closestPointId)
         algorithmResults.clear()
       }
     } else {
+      rememberUndo()
       points[nextPointId++] = screenToCord.apply(Vec2(position.x.toDouble(), position.y.toDouble()))
       algorithmResults.clear()
     }
@@ -113,18 +143,60 @@ class CanvasState {
   }
 
   fun clearPoints() {
-    points.clear(); selectedPoints.clear(); algorithmResults.clear()
+    if (points.isNotEmpty() || selectedPoints.isNotEmpty()) rememberUndo()
+    points.clear(); selectedPoints.clear(); algorithmResults.clear(); hoveredPointId = null
   }
 
+  private fun restore(snapshot: SceneSnapshot) {
+    points.clear(); points.putAll(snapshot.points)
+    selectedPoints.clear(); selectedPoints.addAll(snapshot.selected)
+    algorithmResults.clear()
+    nextPointId = (points.keys.maxOrNull() ?: -1) + 1
+  }
+
+  fun undo() {
+    undoStack.removeLastOrNull()?.let { previous ->
+      redoStack.addLast(snapshot()); restore(previous)
+    }
+  }
+
+  fun redo() {
+    redoStack.removeLastOrNull()?.let { next ->
+      undoStack.addLast(snapshot()); restore(next)
+    }
+  }
+
+  val canUndo: Boolean get() = undoStack.isNotEmpty()
+  val canRedo: Boolean get() = redoStack.isNotEmpty()
+
+  fun resetView() {
+    if (hasLaidOut) {
+      setTransform(initialTransform)
+      hasMoved = false
+    }
+  }
+
+  fun dismissHelp() { isHelpDismissed = true }
+
+  fun removeAlgorithmResult(name: String) { algorithmResults.remove(name) }
+
   fun toggleSelectionMode() {
-    isSelectionMode = !isSelectionMode
+    applySelectionMode(!isSelectionMode)
+  }
+
+  fun applySelectionMode(selectionMode: Boolean) {
+    isSelectionMode = selectionMode
     if (!isSelectionMode) selectedPoints.clear()
     algorithmResults.clear()
   }
 
-  fun clearSelection() { selectedPoints.clear(); algorithmResults.clear() }
+  fun clearSelection() {
+    if (selectedPoints.isNotEmpty()) rememberUndo()
+    selectedPoints.clear(); algorithmResults.clear()
+  }
 
   fun selectAllPoints() {
+    if (selectedPoints != points.keys) rememberUndo()
     selectedPoints.clear(); selectedPoints.addAll(points.keys); algorithmResults.clear()
   }
 

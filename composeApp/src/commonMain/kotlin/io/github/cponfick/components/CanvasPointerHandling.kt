@@ -22,6 +22,7 @@ fun Modifier.canvasPointerHandling(
     val event = it.changes.firstOrNull()
     when {
       event == null -> return@onPointerEvent
+      !event.pressed -> canvasState.updateHover(event.position)
       event.pressed && it.buttons.isPressed(0) -> {
         val delta = Offset(
           event.position.x - event.previousPosition.x,
@@ -34,6 +35,7 @@ fun Modifier.canvasPointerHandling(
   .onPointerEvent(PointerEventType.Release) {
     val event = it.changes.firstOrNull() ?: return@onPointerEvent
     canvasState.onPointerRelease(event.position, it.button?.isPrimary == true)
+    canvasState.updateHover(event.position)
   }
   .onPointerEvent(PointerEventType.Scroll) {
     val event = it.changes.firstOrNull()

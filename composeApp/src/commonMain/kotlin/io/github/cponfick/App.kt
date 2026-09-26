@@ -4,7 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ fun App() {
         cordToScreen = canvasState.cordToScreen,
         points = canvasState.points,
         selectedPoints = canvasState.selectedPoints,
+        hoveredPointId = canvasState.hoveredPointId,
         showLabels = canvasState.showLabels,
         algorithmResults = canvasState.algorithmResults,
         canvasModifier = Modifier
@@ -37,6 +39,18 @@ fun App() {
           .graphicsLayer()
           .canvasPointerHandling(canvasState, scrollFactor)
       )
+
+      if (!canvasState.isHelpDismissed) {
+        Card(
+          modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp).zIndex(2f),
+          colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        ) {
+          Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Click to add points • drag to pan • wheel to zoom", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { canvasState.dismissHelp() }) { Text("Dismiss") }
+          }
+        }
+      }
 
       AlgorithmPanel(
         canvasState = canvasState,

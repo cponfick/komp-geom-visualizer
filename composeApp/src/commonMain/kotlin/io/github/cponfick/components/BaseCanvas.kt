@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PointMode
 import androidx.compose.ui.graphics.graphicsLayer
@@ -25,10 +26,15 @@ fun BaseCanvas(
   showLabels: Boolean = true,
   points: Map<Int, Vec2> = emptyMap(),
   selectedPoints: Set<Int> = emptySet(),
+  hoveredPointId: Int? = null,
   algorithmResults: Map<String, AlgorithmResult> = emptyMap(),
   canvasModifier: Modifier
 ) {
   val textMeasurer = rememberTextMeasurer()
+  val gridColor = MaterialTheme.colorScheme.outlineVariant
+  val axisColor = MaterialTheme.colorScheme.onSurface
+  val pointColor = MaterialTheme.colorScheme.onSurface
+  val selectedColor = MaterialTheme.colorScheme.primary
 
   Canvas(modifier = canvasModifier.fillMaxSize().graphicsLayer()) {
     val canvasWidth = size.width
@@ -62,7 +68,7 @@ fun BaseCanvas(
       val x = (originOffsetX + i * gridSpacing).toFloat()
       if (x >= 0 && x <= canvasWidth) {
         drawLine(
-          color = Color.LightGray,
+          color = gridColor,
           start = Offset(x, 0f),
           end = Offset(x, canvasHeight),
           strokeWidth = 0.5f
@@ -74,7 +80,7 @@ fun BaseCanvas(
       val y = (originOffsetY + i * gridSpacing).toFloat()
       if (y >= 0 && y <= canvasHeight) {
         drawLine(
-          color = Color.LightGray,
+          color = gridColor,
           start = Offset(0f, y),
           end = Offset(canvasWidth, y),
           strokeWidth = 0.5f
@@ -84,13 +90,13 @@ fun BaseCanvas(
 
     // Draw axes
     drawLine(
-      color = Color.Black,
+      color = axisColor,
       start = Offset(origin.x, 0f),
       end = Offset(origin.x, canvasHeight),
       strokeWidth = 2f
     )
     drawLine(
-      color = Color.Black,
+      color = axisColor,
       start = Offset(0f, origin.y),
       end = Offset(canvasWidth, origin.y),
       strokeWidth = 2f
@@ -113,21 +119,23 @@ fun BaseCanvas(
 
     // Draw regular points
     val regularPoints = pointsToDraw.filter { (key, _) -> !selectedPoints.contains(key) }
-    drawPoints(
-      points = regularPoints.map { it.second },
-      pointMode = PointMode.Points,
-      color = Color.Black,
-      strokeWidth = 3f
-    )
+    // Circles are used instead of PointMode.Points because the Wasm canvas
+    // backend can drop very small point primitives at some zoom levels.
+    regularPoints.forEach { (_, position) ->
+      drawCircle(pointColor, radius = 4f, center = position)
+    }
 
     // Draw selected points
     val selectedPointsDrawn = pointsToDraw.filter { (key, _) -> selectedPoints.contains(key) }
-    drawPoints(
-      points = selectedPointsDrawn.map { it.second },
-      pointMode = PointMode.Points,
-      color = Color.Blue,
-      strokeWidth = 5f
-    )
+    selectedPointsDrawn.forEach { (_, position) ->
+      drawCircle(selectedColor, radius = 5f, center = position)
+    }
+
+    hoveredPointId?.let { id ->
+      pointsToDraw.firstOrNull { it.first == id }?.second?.let { position ->
+        drawCircle(selectedColor, radius = 10f, center = position, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f))
+      }
+    }
 
     // Draw algorithm results
     algorithmResults.values.forEach { result ->
@@ -145,6 +153,10 @@ fun BaseCanvas(
             end = offset2,
             strokeWidth = 3f
           )
+
+          // Emphasize the solution endpoints as well as the connecting segment.
+          drawCircle(result.color, radius = 7f, center = offset1)
+          drawCircle(result.color, radius = 7f, center = offset2)
 
           // Draw distance label at midpoint
           if (showLabels) {
@@ -196,12 +208,9 @@ fun BaseCanvas(
             .map { cordToScreen.apply(it) }
             .map { Offset(it.x.toFloat(), it.y.toFloat()) }
 
-          drawPoints(
-            points = resultPoints,
-            pointMode = PointMode.Points,
-            color = result.color,
-            strokeWidth = 4f
-          )
+          resultPoints.forEach { position ->
+            drawCircle(result.color, radius = 5f, center = position)
+          }
         }
       }
     }
@@ -217,7 +226,7 @@ fun BaseCanvas(
 
       drawText(
         textMeasurer = textMeasurer,
-        topLeft = offset,
+        topLeft = offset + Offset(4f, 4f),
         text = text,
         softWrap = false,
         maxLines = 1
