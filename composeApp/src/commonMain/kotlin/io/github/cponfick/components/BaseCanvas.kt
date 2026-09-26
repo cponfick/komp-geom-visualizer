@@ -51,6 +51,24 @@ fun BaseCanvas(
       return@Canvas
     }
 
+    fun drawLabel(text: String, topLeft: Offset) {
+      if (!topLeft.x.isFinite() || !topLeft.y.isFinite()) return
+      val maxX = (canvasWidth - 1f).coerceAtLeast(0f)
+      val maxY = (canvasHeight - 1f).coerceAtLeast(0f)
+      // Do not clamp labels that are completely beyond the right/bottom edge:
+      // clamping would make every off-screen label render on top of each other.
+      if (topLeft.x > maxX || topLeft.y > maxY) return
+      val safeX = topLeft.x.coerceAtLeast(0f)
+      val safeY = topLeft.y.coerceAtLeast(0f)
+      drawText(
+        textMeasurer = textMeasurer,
+        topLeft = Offset(safeX, safeY),
+        text = text,
+        softWrap = false,
+        maxLines = 1
+      )
+    }
+
     val initialOrigin = Vec2(0.0, 0.0)
     val originVec2 = cordToScreen.apply(initialOrigin)
     val origin = Offset(x = originVec2.x.toFloat(), y = originVec2.y.toFloat())
@@ -130,7 +148,7 @@ fun BaseCanvas(
       val hovered = segment.id == hoveredSegmentId
       drawLine(if (selected) selectedColor else if (hovered) segmentHoverColor else pointColor,
         Offset(a.x.toFloat(), a.y.toFloat()), Offset(b.x.toFloat(), b.y.toFloat()), strokeWidth = if (selected || hovered) 5f else 3f)
-      if (showLabels) drawText(textMeasurer, "S${segment.id}", Offset(((a.x+b.x)/2).toFloat()+4f,((a.y+b.y)/2).toFloat()+4f), softWrap=false, maxLines=1)
+      if (showLabels) drawLabel("S${segment.id}", Offset(((a.x+b.x)/2).toFloat()+4f,((a.y+b.y)/2).toFloat()+4f))
     }
     segmentPreview?.let { (start,end) ->
       val a=cordToScreen.apply(start); val b=cordToScreen.apply(end)
@@ -185,13 +203,7 @@ fun BaseCanvas(
               (offset1.y + offset2.y) / 2
             )
             val distanceText = "d = ${formatDouble(result.distance)}"
-            drawText(
-              textMeasurer = textMeasurer,
-              topLeft = midpoint,
-              text = distanceText,
-              softWrap = false,
-              maxLines = 1
-            )
+            drawLabel(distanceText, midpoint)
           }
         }
         is AlgorithmResult.Line -> {
@@ -218,8 +230,7 @@ fun BaseCanvas(
         }
         is AlgorithmResult.Error -> {
           if (showLabels) {
-            drawText(textMeasurer = textMeasurer, topLeft = Offset(8f, canvasHeight - 28f),
-              text = result.message, softWrap = false, maxLines = 1)
+            drawLabel(result.message, Offset(8f, canvasHeight - 28f))
           }
         }
         is AlgorithmResult.Points -> {
@@ -239,7 +250,7 @@ fun BaseCanvas(
             drawLine(result.segmentColor, Offset(start.x.toFloat(), start.y.toFloat()), Offset(end.x.toFloat(), end.y.toFloat()), strokeWidth = 3f)
             if (showLabels) {
               val label = cordToScreen.apply(Vec2((segment.start.x + segment.end.x) / 2.0, (segment.start.y + segment.end.y) / 2.0))
-              drawText(textMeasurer, "S${segment.id}", Offset(label.x.toFloat() + 4f, label.y.toFloat() + 4f), softWrap = false, maxLines = 1)
+              drawLabel("S${segment.id}", Offset(label.x.toFloat() + 4f, label.y.toFloat() + 4f))
             }
           }
           result.intersections.forEach { intersection ->
@@ -254,7 +265,7 @@ fun BaseCanvas(
                 if (start != null && end != null) {
                   val a = cordToScreen.apply(start); val b = cordToScreen.apply(end)
                   drawLine(result.overlapColor, Offset(a.x.toFloat(), a.y.toFloat()), Offset(b.x.toFloat(), b.y.toFloat()), strokeWidth = 7f)
-                  if (showLabels) drawText(textMeasurer, "overlap S${intersection.firstSegment}/S${intersection.secondSegment}", Offset(a.x.toFloat() + 5f, a.y.toFloat() + 5f), softWrap = false, maxLines = 1)
+                  if (showLabels) drawLabel("overlap S${intersection.firstSegment}/S${intersection.secondSegment}", Offset(a.x.toFloat() + 5f, a.y.toFloat() + 5f))
                 }
               }
             }
@@ -272,13 +283,7 @@ fun BaseCanvas(
       val text = "P$key ($xCord, $yCord)"
 
 
-      drawText(
-        textMeasurer = textMeasurer,
-        topLeft = offset + Offset(4f, 4f),
-        text = text,
-        softWrap = false,
-        maxLines = 1
-      )
+      drawLabel(text, offset + Offset(4f, 4f))
     }
   }
 }
