@@ -64,6 +64,22 @@ class CanvasState {
   private fun distanceToSegment(p: Offset, a: Offset, b: Offset): Double { val px=p.x.toDouble(); val py=p.y.toDouble(); val ax=a.x.toDouble(); val ay=a.y.toDouble(); val bx=b.x.toDouble(); val by=b.y.toDouble(); val dx=bx-ax; val dy=by-ay; val len2=dx*dx+dy*dy; if (len2==0.0) return sqrt((px-ax)*(px-ax)+(py-ay)*(py-ay)); val t=((px-ax)*dx+(py-ay)*dy)/len2; val u=t.coerceIn(0.0,1.0); val x=ax+u*dx; val y=ay+u*dy; return sqrt((px-x)*(px-x)+(py-y)*(py-y)) }
   private fun hitSegment(position: Offset): Int? = segments.entries.map { (id,s) -> id to distanceToSegment(position, cordToScreen.apply(s.start).let { Offset(it.x.toFloat(),it.y.toFloat()) }, cordToScreen.apply(s.end).let { Offset(it.x.toFloat(),it.y.toFloat()) }) }.filter { it.second <= segmentHitRadiusPixels }.minByOrNull { it.second }?.first
   fun updateHover(position: Offset) { hoveredPointId=hitPoint(position); hoveredSegmentId=if (hoveredPointId==null) hitSegment(position) else null }
+  fun cancelPointerGesture() { drawingStart=null; segmentPreview=null; hasMoved=false }
+  fun onPinchZoom(previousCentroid: Offset, currentCentroid: Offset, scale: Double) {
+    if (!scale.isFinite() || scale <= 0.0) return
+    val old = tempCordToScreen.apply(Vec2(1.0,0.0)).distance(tempCordToScreen.apply(Vec2(0.0,0.0)))
+    if (!old.isFinite() || old <= 0.0) return
+    val new = (old * scale).coerceIn(minPixelsPerWorldUnit, maxPixelsPerWorldUnit)
+    val anchor = Vec2(previousCentroid.x.toDouble(), previousCentroid.y.toDouble())
+    val world = screenToCord.apply(anchor)
+    val scaled = tempCordToScreen.scale(new / old, new / old)
+    val scaledAnchor = scaled.apply(world)
+    setTransform(scaled.translate(
+      currentCentroid.x.toDouble() - scaledAnchor.x,
+      currentCentroid.y.toDouble() - scaledAnchor.y
+    ))
+    lastPointerPosition = currentCentroid
+  }
   fun onPointerRelease(position: Offset, isPrimary: Boolean) {
     lastPointerPosition=position
     if (interactionMode == InteractionMode.DRAW_SEGMENTS) {

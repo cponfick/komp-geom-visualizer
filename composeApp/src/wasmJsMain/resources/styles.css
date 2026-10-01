@@ -5,3 +5,9 @@ html, body {
     padding: 0;
     overflow: hidden;
 }
+
+/* Let Compose receive touch gestures instead of the browser interpreting them
+   as scrolling, navigation, or page zooming. */
+canvas {
+    touch-action: none;
+}

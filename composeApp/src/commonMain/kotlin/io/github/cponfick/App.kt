@@ -50,7 +50,7 @@ fun App() {
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         ) {
           Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Add points or draw segments • drag to pan • wheel to zoom", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            Text("Tap to add points • drag to pan • pinch or wheel to zoom", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { canvasState.dismissHelp() }) { Text("Dismiss") }
           }
         }
